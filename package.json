@@ -1,0 +1,31 @@
+{
+  "name": "lucidchart-client",
+  "version": "0.0.1",
+  "description": "A basic NodeJS client for the Lucidchart API",
+  "scripts": {
+    "start": "ts-node src/index.ts",
+    "watch": "nodemon",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "engines": {
+    "node": "10.13.0",
+    "npm": "6.4.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rene-leanix/lucidchart-client.git"
+  },
+  "author": "LeanIX",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/rene-leanix/lucidchart-client/issues"
+  },
+  "homepage": "https://github.com/rene-leanix/lucidchart-client#readme",
+  "dependencies": {
+    "@types/node": "^13.1.8",
+    "nodemon": "^2.0.2",
+    "ts-node": "^8.6.2",
+    "tslint": "^6.0.0",
+    "typescript": "^3.7.5"
+  }
+}
