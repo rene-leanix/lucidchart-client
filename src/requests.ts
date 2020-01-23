@@ -3,27 +3,27 @@ import * as CryptoJS from 'crypto-js';
 import { createInterface } from 'readline';
 
 type Params = Record<string, string | number>;
-interface TokenResponse {
+export interface TokenResponse {
   oauth_token: string;
   oauth_token_secret: string;
 }
 
 const KEY = process.env.LUCIDCHART_CLIENT_ID as string;
 const SECRET = process.env.LUCIDCHART_CLIENT_SECRET as string;
-const BASE_PATH = 'https://www.lucidchart.com/oauth';
+const BASE_PATH = 'https://www.lucidchart.com';
 
-export async function authenticate() {
-  const requestToken = await executeRequest('requestToken');
-  console.log(`Please grant access at ${BASE_PATH}/authorize?oauth_token=${requestToken.oauth_token} and paste the verfication code:`);
+export async function authenticate(): Promise<TokenResponse> {
+  const requestToken = splitQueryString<TokenResponse>(await executeRequest('oauth/requestToken'));
+  console.log(`Please grant access at ${BASE_PATH}/oauth/authorize?oauth_token=${requestToken.oauth_token} and paste the verfication code:`);
   const verifier = await getVerificationCode();
-  const accessToken = await executeRequest('accessToken', {
+  const accessToken = splitQueryString<TokenResponse>(await executeRequest('oauth/accessToken', {
     oauth_verifier: verifier,
     oauth_token: requestToken.oauth_token
-  }, requestToken.oauth_token_secret);
-  console.log({ accessToken });
+  }, requestToken.oauth_token_secret));
+  return accessToken;
 }
 
-async function executeRequest(endpoint: string, additionalParams: Params = {}, tokenSecret: string = ''): Promise<TokenResponse> {
+async function executeRequest(endpoint: string, additionalParams: Params = {}, tokenSecret: string = ''): Promise<string> {
   const url = `${BASE_PATH}/${endpoint}`;
   const params: Params = {
     oauth_timestamp: Math.floor(Date.now() / 1000),
@@ -33,10 +33,9 @@ async function executeRequest(endpoint: string, additionalParams: Params = {}, t
   };
   Object.assign(params, additionalParams);
   params.oauth_signature = calculateSignature('GET', url, params, tokenSecret);
-  const response: string = await request(url, {
+  return await request(url, {
     qs: params
   });
-  return splitQueryString(response);
 }
 
 function splitQueryString<T extends {}>(response: string): T {
