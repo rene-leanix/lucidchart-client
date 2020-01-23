@@ -1,19 +1,23 @@
 import * as request from 'request-promise-native';
 import * as CryptoJS from 'crypto-js';
+import { createInterface } from 'readline';
 
 type Params = Record<string, string | number>;
 
 const KEY = process.env.LUCIDCHART_CLIENT_ID as string;
 const SECRET = process.env.LUCIDCHART_CLIENT_SECRET as string;
+const BASE_PATH = 'https://www.lucidchart.com/oauth';
 
 export async function authenticate() {
-  const response = await executeRequest('requestToken');
-  const [token, tokenSecret] = response.split('&').map(keyValuePair => keyValuePair.split('=')[1]);
-  console.log({ token, tokenSecret });
+  const tokenResponse = await executeRequest('requestToken');
+  const [token] = tokenResponse.split('&').map(keyValuePair => keyValuePair.split('=')[1]);
+  console.log(`Please grant access at ${BASE_PATH}/authorize?oauth_token=${token} and paste the verfication code:`);
+  const code = await getVerificationCode();
+  console.log({ code });
 }
 
 async function executeRequest(endpoint: string): Promise<string> {
-  const url = `https://www.lucidchart.com/oauth/${endpoint}`;
+  const url = `${BASE_PATH}/${endpoint}`;
   const params: Params = {
     oauth_timestamp: Math.floor(Date.now() / 1000),
     oauth_nonce: Math.random(),
@@ -54,4 +58,12 @@ function encodeData(toEncode: string | number): string {
       .replace(/\)/g, '%29')
       .replace(/\*/g, '%2A');
   }
+}
+
+async function getVerificationCode(): Promise<string> {
+  return new Promise(resolve => {
+    createInterface({
+      input: process.stdin
+    }).question('', resolve);
+  });
 }
