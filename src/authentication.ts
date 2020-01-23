@@ -3,20 +3,27 @@ import * as CryptoJS from 'crypto-js';
 import { createInterface } from 'readline';
 
 type Params = Record<string, string | number>;
+interface TokenResponse {
+  oauth_token: string;
+  oauth_token_secret: string;
+}
 
 const KEY = process.env.LUCIDCHART_CLIENT_ID as string;
 const SECRET = process.env.LUCIDCHART_CLIENT_SECRET as string;
 const BASE_PATH = 'https://www.lucidchart.com/oauth';
 
 export async function authenticate() {
-  const tokenResponse = await executeRequest('requestToken');
-  const [token] = tokenResponse.split('&').map(keyValuePair => keyValuePair.split('=')[1]);
-  console.log(`Please grant access at ${BASE_PATH}/authorize?oauth_token=${token} and paste the verfication code:`);
-  const code = await getVerificationCode();
-  console.log({ code });
+  const requestToken = await executeRequest('requestToken');
+  console.log(`Please grant access at ${BASE_PATH}/authorize?oauth_token=${requestToken.oauth_token} and paste the verfication code:`);
+  const verifier = await getVerificationCode();
+  const accessToken = await executeRequest('accessToken', {
+    oauth_verifier: verifier,
+    oauth_token: requestToken.oauth_token
+  }, requestToken.oauth_token_secret);
+  console.log({ accessToken });
 }
 
-async function executeRequest(endpoint: string): Promise<string> {
+async function executeRequest(endpoint: string, additionalParams: Params = {}, tokenSecret: string = ''): Promise<TokenResponse> {
   const url = `${BASE_PATH}/${endpoint}`;
   const params: Params = {
     oauth_timestamp: Math.floor(Date.now() / 1000),
@@ -24,15 +31,25 @@ async function executeRequest(endpoint: string): Promise<string> {
     oauth_consumer_key: KEY,
     oauth_signature_method: 'HMAC-SHA1'
   };
-  params.oauth_signature = calculateSignature('POST', url, params);
-  return request.post(url, {
+  Object.assign(params, additionalParams);
+  params.oauth_signature = calculateSignature('GET', url, params, tokenSecret);
+  const response: string = await request(url, {
     qs: params
   });
+  return splitQueryString(response);
 }
 
-function calculateSignature(method: string, url: string, params: Params): string {
+function splitQueryString<T extends {}>(response: string): T {
+  return response.split('&').reduce<T>((result, keyValuePair) => {
+    const [key, value] = keyValuePair.split('=');
+    return { ...result, [key]: value };
+  }, {} as T);
+}
+
+function calculateSignature(method: string, url: string, params: Params, tokenSecret: string): string {
   const signatureBase = createSignatureBase(method, url, params);
-  const encoding = CryptoJS.enc.Base64.stringify(CryptoJS.HmacSHA1(signatureBase, `${SECRET}&`));
+  const key = `${SECRET}&${tokenSecret}`;
+  const encoding = CryptoJS.enc.Base64.stringify(CryptoJS.HmacSHA1(signatureBase, key));
   return encoding;
 }
 

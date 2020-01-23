@@ -10,6 +10,6 @@ authenticate()
     process.exit(0);
   })
   .catch(err => {
-    console.error(err);
+    console.error(err.toString());
     process.exit(1);
   });
