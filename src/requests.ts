@@ -13,17 +13,21 @@ const SECRET = process.env.LUCIDCHART_CLIENT_SECRET as string;
 const BASE_PATH = 'https://www.lucidchart.com';
 
 export async function authenticate(): Promise<TokenResponse> {
-  const requestToken = splitQueryString<TokenResponse>(await executeRequest('oauth/requestToken'));
+  const requestToken = splitQueryString<TokenResponse>(await executeOAuthRequest('oauth/requestToken'));
   console.log(`Please grant access at ${BASE_PATH}/oauth/authorize?oauth_token=${requestToken.oauth_token} and paste the verfication code:`);
   const verifier = await getVerificationCode();
-  const accessToken = splitQueryString<TokenResponse>(await executeRequest('oauth/accessToken', {
+  const accessToken = splitQueryString<TokenResponse>(await executeOAuthRequest('oauth/accessToken', {
     oauth_verifier: verifier,
     oauth_token: requestToken.oauth_token
   }, requestToken.oauth_token_secret));
   return accessToken;
 }
 
-async function executeRequest(endpoint: string, additionalParams: Params = {}, tokenSecret: string = ''): Promise<string> {
+export async function executeRequest<T>(endpoint: string, accessToken: TokenResponse): Promise<T> {
+  return executeOAuthRequest<T>(endpoint, { oauth_token: accessToken.oauth_token }, accessToken.oauth_token_secret);
+}
+
+async function executeOAuthRequest<T = string>(endpoint: string, additionalParams: Params = {}, tokenSecret: string = ''): Promise<T> {
   const url = `${BASE_PATH}/${endpoint}`;
   const params: Params = {
     oauth_timestamp: Math.floor(Date.now() / 1000),
