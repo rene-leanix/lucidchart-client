@@ -2,6 +2,8 @@
   "extends": ["tslint:recommended"],
   "rules": {
     "quotemark": [true, "single"],
-    "trailing-comma": false
+    "trailing-comma": false,
+    "semicolon": [true, "always"],
+    "no-console": false
   }
 }
