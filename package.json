@@ -1,6 +1,6 @@
 {
   "name": "lucidchart-client",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "A basic NodeJS client for the Lucidchart API",
   "scripts": {
     "start": "ts-node src/index.ts",
